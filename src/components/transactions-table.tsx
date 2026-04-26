@@ -1,4 +1,5 @@
-import { useI18n, formatCurrency, formatDate } from "@/lib/i18n-context-helpers";
+import { useI18n } from "@/lib/i18n-context";
+import { formatCurrency, formatDate } from "@/lib/i18n";
 import { StatusBadge } from "./status-badge";
 import type { Database } from "@/integrations/supabase/types";
 
