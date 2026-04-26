@@ -22,10 +22,9 @@ export function useTransactions({ scope }: Options) {
     let active = true;
 
     const fetchData = async () => {
-      const includeProfiles = scope === "all";
       let query = supabase
         .from("transactions")
-        .select(includeProfiles ? "*, profiles:sales_rep_id(full_name)" : "*")
+        .select("*")
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false });
 
@@ -36,15 +35,28 @@ export function useTransactions({ scope }: Options) {
       if (error) {
         console.error("Failed to load transactions:", error);
         setData([]);
-      } else {
-        setData((rows ?? []) as Tx[]);
+        setLoading(false);
+        return;
       }
+
+      let merged: Tx[] = (rows ?? []) as Tx[];
+
+      if (scope === "all" && merged.length > 0) {
+        const repIds = Array.from(new Set(merged.map((r) => r.sales_rep_id)));
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", repIds);
+        const profMap = new Map((profs ?? []).map((p) => [p.id, p.full_name]));
+        merged = merged.map((r) => ({ ...r, profiles: { full_name: profMap.get(r.sales_rep_id) ?? null } }));
+      }
+
+      setData(merged);
       setLoading(false);
     };
 
     fetchData();
 
-    // Realtime subscription
     const channel = supabase
       .channel(`transactions:${scope}:${user.id}`)
       .on(
