@@ -46,7 +46,7 @@ export type Database = {
           id: string
           notes: string | null
           recorded_by: string | null
-          sales_rep_id: string
+          sales_rep_id: string | null
           status: Database["public"]["Enums"]["transaction_status"]
           transaction_date: string
           updated_at: string
@@ -58,7 +58,7 @@ export type Database = {
           id?: string
           notes?: string | null
           recorded_by?: string | null
-          sales_rep_id: string
+          sales_rep_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           updated_at?: string
@@ -70,7 +70,7 @@ export type Database = {
           id?: string
           notes?: string | null
           recorded_by?: string | null
-          sales_rep_id?: string
+          sales_rep_id?: string | null
           status?: Database["public"]["Enums"]["transaction_status"]
           transaction_date?: string
           updated_at?: string
