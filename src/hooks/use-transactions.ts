@@ -42,13 +42,17 @@ export function useTransactions({ scope }: Options) {
       let merged: Tx[] = (rows ?? []) as Tx[];
 
       if (scope === "all" && merged.length > 0) {
-        const repIds = Array.from(new Set(merged.map((r) => r.sales_rep_id)));
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", repIds);
+        const repIds = Array.from(
+          new Set(merged.map((r) => r.sales_rep_id).filter((id): id is string => !!id)),
+        );
+        const { data: profs } = repIds.length
+          ? await supabase.from("profiles").select("id, full_name").in("id", repIds)
+          : { data: [] as { id: string; full_name: string | null }[] };
         const profMap = new Map((profs ?? []).map((p) => [p.id, p.full_name]));
-        merged = merged.map((r) => ({ ...r, profiles: { full_name: profMap.get(r.sales_rep_id) ?? null } }));
+        merged = merged.map((r) => ({
+          ...r,
+          profiles: { full_name: r.sales_rep_id ? (profMap.get(r.sales_rep_id) ?? null) : null },
+        }));
       }
 
       setData(merged);
