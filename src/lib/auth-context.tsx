@@ -2,12 +2,13 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "manager" | "accountant" | "sales_rep";
+export type Role = "ceo" | "dept_head" | "manager" | "accountant" | "sales_rep";
 
 export interface Profile {
   id: string;
   full_name: string | null;
   monthly_target: number;
+  department_id: string | null;
 }
 
 interface AuthContextValue {
@@ -23,7 +24,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ROLE_PRIORITY: Role[] = ["manager", "accountant", "sales_rep"];
+const ROLE_PRIORITY: Role[] = ["ceo", "dept_head", "manager", "accountant", "sales_rep"];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -34,20 +35,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadUserData = async (uid: string) => {
     const [{ data: prof }, { data: rolesData }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, monthly_target").eq("id", uid).maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("id, full_name, monthly_target, department_id")
+        .eq("id", uid)
+        .maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", uid),
     ]);
-    setProfile(prof ? { ...prof, monthly_target: Number(prof.monthly_target) } : null);
+    setProfile(
+      prof
+        ? {
+            id: prof.id,
+            full_name: prof.full_name,
+            monthly_target: Number(prof.monthly_target),
+            department_id: prof.department_id ?? null,
+          }
+        : null,
+    );
     setRoles(((rolesData ?? []) as { role: Role }[]).map((r) => r.role));
   };
 
   useEffect(() => {
-    // Set up listener FIRST
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
-        // Defer to avoid deadlock
         setTimeout(() => loadUserData(sess.user.id), 0);
       } else {
         setProfile(null);
@@ -55,7 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // THEN check existing session
     supabase.auth.getSession().then(({ data: { session: sess } }) => {
       setSession(sess);
       setUser(sess?.user ?? null);
