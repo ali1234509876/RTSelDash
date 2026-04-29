@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as EntryRouteImport } from './routes/entry'
+import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -30,6 +31,11 @@ const TeamRoute = TeamRouteImport.update({
 const EntryRoute = EntryRouteImport.update({
   id: '/entry',
   path: '/entry',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DepartmentsRoute = DepartmentsRouteImport.update({
+  id: '/departments',
+  path: '/departments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
   '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
   '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
   '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/departments'
     | '/entry'
     | '/team'
     | '/transactions'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/departments'
     | '/entry'
     | '/team'
     | '/transactions'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/departments'
     | '/entry'
     | '/team'
     | '/transactions'
@@ -115,6 +127,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  DepartmentsRoute: typeof DepartmentsRoute
   EntryRoute: typeof EntryRoute
   TeamRoute: typeof TeamRouteWithChildren
   TransactionsRoute: typeof TransactionsRoute
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/entry'
       fullPath: '/entry'
       preLoaderRoute: typeof EntryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/departments': {
+      id: '/departments'
+      path: '/departments'
+      fullPath: '/departments'
+      preLoaderRoute: typeof DepartmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -188,6 +208,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  DepartmentsRoute: DepartmentsRoute,
   EntryRoute: EntryRoute,
   TeamRoute: TeamRouteWithChildren,
   TransactionsRoute: TransactionsRoute,
