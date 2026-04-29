@@ -14,9 +14,31 @@ export type Database = {
   }
   public: {
     Tables: {
+      departments: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          name_ar: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          name_ar?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          name_ar?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
+          department_id: string | null
           full_name: string | null
           id: string
           monthly_target: number
@@ -24,6 +46,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          department_id?: string | null
           full_name?: string | null
           id: string
           monthly_target?: number
@@ -31,12 +54,21 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          department_id?: string | null
           full_name?: string | null
           id?: string
           monthly_target?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -103,6 +135,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_department: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -112,7 +145,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "manager" | "accountant" | "sales_rep"
+      app_role: "manager" | "accountant" | "sales_rep" | "ceo" | "dept_head"
       transaction_status: "completed" | "pending" | "cancelled"
     }
     CompositeTypes: {
@@ -241,7 +274,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["manager", "accountant", "sales_rep"],
+      app_role: ["manager", "accountant", "sales_rep", "ceo", "dept_head"],
       transaction_status: ["completed", "pending", "cancelled"],
     },
   },

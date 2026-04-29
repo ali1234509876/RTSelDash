@@ -19,8 +19,20 @@ function DashboardPage() {
 }
 
 function DashboardRouter() {
-  const { primaryRole } = useAuth();
+  const { primaryRole, profile } = useAuth();
   const { t } = useI18n();
+  if (primaryRole === "ceo") {
+    return <ManagerDashboard showDepartmentFilter title={t("ceo.title")} subtitle={t("ceo.subtitle")} />;
+  }
+  if (primaryRole === "dept_head") {
+    return (
+      <ManagerDashboard
+        fixedDepartmentId={profile?.department_id ?? null}
+        title={t("depthead.title")}
+        subtitle={t("depthead.subtitle")}
+      />
+    );
+  }
   if (primaryRole === "manager") return <ManagerDashboard />;
   if (primaryRole === "accountant") return <AccountantDashboard />;
   if (primaryRole === "sales_rep") return <SalesRepDashboard />;

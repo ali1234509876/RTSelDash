@@ -6,6 +6,7 @@ export const dict = {
   // Brand & shell
   "app.brand": { ar: "أزيموث", en: "AZIMUTH" },
   "app.tagline": { ar: "قيادة الأداء", en: "Performance Command" },
+  "app.company": { ar: "شركة الرابح", en: "Al-Rabeh Company" },
 
   // Auth
   "auth.signin.title": { ar: "تسجيل الدخول", en: "Sign in" },
@@ -27,11 +28,30 @@ export const dict = {
   "nav.team": { ar: "الفريق", en: "Team" },
   "nav.entry": { ar: "إدخال عملية", en: "Record Entry" },
   "nav.settings": { ar: "الإعدادات", en: "Settings" },
+  "nav.departments": { ar: "الأقسام", en: "Departments" },
 
   // Roles
   "role.manager": { ar: "مدير", en: "Manager" },
   "role.accountant": { ar: "محاسب", en: "Accountant" },
   "role.sales_rep": { ar: "مندوب مبيعات", en: "Sales Rep" },
+  "role.ceo": { ar: "الرئيس التنفيذي", en: "CEO" },
+  "role.dept_head": { ar: "رئيس قسم", en: "Department Head" },
+
+  // Departments
+  "dept.title": { ar: "إدارة الأقسام", en: "Departments" },
+  "dept.subtitle": { ar: "أنشئ وأدر أقسام الشركة", en: "Create and manage company departments" },
+  "dept.label": { ar: "القسم", en: "Department" },
+  "dept.name": { ar: "اسم القسم", en: "Department name" },
+  "dept.nameAr": { ar: "الاسم بالعربية", en: "Arabic name" },
+  "dept.add": { ar: "إضافة قسم", en: "Add Department" },
+  "dept.none": { ar: "بدون قسم", en: "No department" },
+  "dept.all": { ar: "كل الأقسام", en: "All Departments" },
+  "dept.global": { ar: "نظرة شاملة", en: "Global view" },
+  "dept.filter": { ar: "تصفية حسب القسم", en: "Filter by department" },
+  "dept.assign": { ar: "تعيين القسم", en: "Assign Department" },
+  "dept.empty": { ar: "لا توجد أقسام بعد", en: "No departments yet" },
+  "dept.sales": { ar: "قسم المبيعات", en: "Sales Department" },
+  "dept.telecom": { ar: "قسم اتصالات المبيعات", en: "Telecommunications Sales Dept" },
 
   // KPIs
   "kpi.totalAchievement": { ar: "إجمالي المحقق", en: "Total Achievement" },
@@ -66,12 +86,21 @@ export const dict = {
   "status.pending": { ar: "قيد المعالجة", en: "Pending" },
   "status.cancelled": { ar: "ملغى", en: "Cancelled" },
 
-  // Manager
+  // Manager / leadership
   "manager.title": { ar: "نظرة استراتيجية", en: "Strategic Overview" },
   "manager.subtitle": { ar: "أداء الفريق والمناديب", en: "Team and representative performance" },
   "manager.repBreakdown": { ar: "أداء المناديب", en: "Representative Performance" },
   "manager.setTarget": { ar: "تحديد الهدف", en: "Set Target" },
   "manager.targetSaved": { ar: "تم حفظ الهدف", en: "Target saved" },
+
+  // CEO
+  "ceo.title": { ar: "النظرة التنفيذية", en: "Executive Overview" },
+  "ceo.subtitle": { ar: "أداء كافة الأقسام", en: "Performance across every department" },
+  "ceo.deptBreakdown": { ar: "أداء الأقسام", en: "Department Performance" },
+
+  // Dept head
+  "depthead.title": { ar: "أداء القسم", en: "Department Performance" },
+  "depthead.subtitle": { ar: "أداء فريق قسمك", en: "Your department's team performance" },
 
   // Sales rep
   "rep.welcome": { ar: "أهلاً", en: "Welcome" },
@@ -80,6 +109,12 @@ export const dict = {
   // Accountant
   "acc.title": { ar: "إدارة العمليات", en: "Operations Management" },
   "acc.subtitle": { ar: "تسجيل ودقة العمليات المالية", en: "Record and audit financial operations" },
+
+  // Employee detail
+  "emp.detail.title": { ar: "ملف الموظف", en: "Employee Profile" },
+  "emp.detail.back": { ar: "عودة إلى الفريق", en: "Back to Team" },
+  "emp.detail.recent": { ar: "آخر عمليات الموظف", en: "Recent transactions" },
+  "emp.detail.notFound": { ar: "لم يتم العثور على الموظف", en: "Employee not found" },
 
   // Common
   "common.loading": { ar: "جارٍ التحميل...", en: "Loading..." },

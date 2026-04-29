@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
+import { useDepartments, departmentLabel } from "@/hooks/use-departments";
+import { useAuth } from "@/lib/auth-context";
 import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,12 +23,13 @@ interface RepRow {
   id: string;
   full_name: string | null;
   monthly_target: number;
+  department_id: string | null;
   roles: Role[];
 }
 
 function TeamPage() {
   return (
-    <ProtectedShell allow={["manager"]}>
+    <ProtectedShell allow={["ceo", "dept_head", "manager"]}>
       <Inner />
     </ProtectedShell>
   );
@@ -34,13 +37,17 @@ function TeamPage() {
 
 function Inner() {
   const { t, lang } = useI18n();
+  const { primaryRole } = useAuth();
   const { data: txs } = useTransactions({ scope: "all" });
+  const { data: departments } = useDepartments();
   const [reps, setReps] = useState<RepRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
+  const canAssignDept = primaryRole === "ceo" || primaryRole === "dept_head";
+
   const load = async () => {
     const [{ data: profs }, { data: rolesData }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, monthly_target"),
+      supabase.from("profiles").select("id, full_name, monthly_target, department_id"),
       supabase.from("user_roles").select("user_id, role"),
     ]);
     const roleMap = new Map<string, Role[]>();
@@ -54,6 +61,7 @@ function Inner() {
         id: p.id,
         full_name: p.full_name,
         monthly_target: Number(p.monthly_target),
+        department_id: p.department_id ?? null,
         roles: roleMap.get(p.id) ?? [],
       })),
     );
@@ -78,6 +86,21 @@ function Inner() {
     }
   };
 
+  const updateDepartment = async (id: string, deptId: string) => {
+    const value = deptId === "__none__" ? null : deptId;
+    const { error } = await supabase.from("profiles").update({ department_id: value }).eq("id", id);
+    if (error) toast.error(error.message);
+    else {
+      setReps((rs) => rs.map((r) => (r.id === id ? { ...r, department_id: value } : r)));
+    }
+  };
+
+  const deptName = useMemo(() => {
+    const m = new Map<string, string>();
+    departments.forEach((d) => m.set(d.id, departmentLabel(d, lang)));
+    return m;
+  }, [departments, lang]);
+
   return (
     <div className="px-10 py-8 max-w-[1600px] mx-auto">
       <header className="mb-8">
@@ -90,6 +113,7 @@ function Inner() {
           <thead>
             <tr className="text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
               <th className="px-6 py-4 font-semibold text-start">{t("tx.salesRep")}</th>
+              <th className="px-4 py-4 font-semibold text-start">{t("dept.label")}</th>
               <th className="px-4 py-4 font-semibold text-start">{t("kpi.totalAchievement")}</th>
               <th className="px-4 py-4 font-semibold text-start">{t("kpi.monthlyTarget")}</th>
               <th className="px-4 py-4 font-semibold text-start">{t("kpi.efficiencyRatio")}</th>
@@ -104,10 +128,36 @@ function Inner() {
               return (
                 <tr key={rep.id} className="hover:bg-accent/40 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-foreground">{rep.full_name ?? "—"}</div>
+                    <Link
+                      to="/team/$id"
+                      params={{ id: rep.id }}
+                      className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                      {rep.full_name ?? "—"}
+                    </Link>
                     <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
                       {rep.roles.map((r) => t(`role.${r}` as const)).join(" · ")}
                     </div>
+                  </td>
+                  <td className="px-4 py-4">
+                    {canAssignDept ? (
+                      <select
+                        value={rep.department_id ?? "__none__"}
+                        onChange={(e) => updateDepartment(rep.id, e.target.value)}
+                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                      >
+                        <option value="__none__">{t("dept.none")}</option>
+                        {departments.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {departmentLabel(d, lang)}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {rep.department_id ? deptName.get(rep.department_id) : t("dept.none")}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4 text-sm tabular text-foreground">
                     {formatCurrency(m.totalAchievement, lang)} {t("common.currency")}
@@ -137,7 +187,7 @@ function Inner() {
             })}
             {reps.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted-foreground">
                   {t("tx.empty")}
                 </td>
               </tr>

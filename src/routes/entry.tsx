@@ -18,7 +18,7 @@ export const Route = createFileRoute("/entry")({
 
 function EntryPage() {
   return (
-    <ProtectedShell allow={["accountant", "manager"]}>
+    <ProtectedShell allow={["ceo", "dept_head", "accountant", "manager"]}>
       <EntryForm />
     </ProtectedShell>
   );

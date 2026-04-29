@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TeamRouteImport } from './routes/team'
 import { Route as EntryRouteImport } from './routes/entry'
+import { Route as DepartmentsRouteImport } from './routes/departments'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TeamIdRouteImport } from './routes/team.$id'
 
 const TransactionsRoute = TransactionsRouteImport.update({
   id: '/transactions',
@@ -29,6 +31,11 @@ const TeamRoute = TeamRouteImport.update({
 const EntryRoute = EntryRouteImport.update({
   id: '/entry',
   path: '/entry',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DepartmentsRoute = DepartmentsRouteImport.update({
+  id: '/departments',
+  path: '/departments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -46,53 +53,83 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamIdRoute = TeamIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TeamRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
-  '/team': typeof TeamRoute
+  '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
+  '/team/$id': typeof TeamIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
-  '/team': typeof TeamRoute
+  '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
+  '/team/$id': typeof TeamIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/departments': typeof DepartmentsRoute
   '/entry': typeof EntryRoute
-  '/team': typeof TeamRoute
+  '/team': typeof TeamRouteWithChildren
   '/transactions': typeof TransactionsRoute
+  '/team/$id': typeof TeamIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/entry' | '/team' | '/transactions'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/departments'
+    | '/entry'
+    | '/team'
+    | '/transactions'
+    | '/team/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/entry' | '/team' | '/transactions'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/departments'
+    | '/entry'
+    | '/team'
+    | '/transactions'
+    | '/team/$id'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/departments'
     | '/entry'
     | '/team'
     | '/transactions'
+    | '/team/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  DepartmentsRoute: typeof DepartmentsRoute
   EntryRoute: typeof EntryRoute
-  TeamRoute: typeof TeamRoute
+  TeamRoute: typeof TeamRouteWithChildren
   TransactionsRoute: typeof TransactionsRoute
 }
 
@@ -119,6 +156,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EntryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/departments': {
+      id: '/departments'
+      path: '/departments'
+      fullPath: '/departments'
+      preLoaderRoute: typeof DepartmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -140,15 +184,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/team/$id': {
+      id: '/team/$id'
+      path: '/$id'
+      fullPath: '/team/$id'
+      preLoaderRoute: typeof TeamIdRouteImport
+      parentRoute: typeof TeamRoute
+    }
   }
 }
+
+interface TeamRouteChildren {
+  TeamIdRoute: typeof TeamIdRoute
+}
+
+const TeamRouteChildren: TeamRouteChildren = {
+  TeamIdRoute: TeamIdRoute,
+}
+
+const TeamRouteWithChildren = TeamRoute._addFileChildren(TeamRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  DepartmentsRoute: DepartmentsRoute,
   EntryRoute: EntryRoute,
-  TeamRoute: TeamRoute,
+  TeamRoute: TeamRouteWithChildren,
   TransactionsRoute: TransactionsRoute,
 }
 export const routeTree = rootRouteImport
