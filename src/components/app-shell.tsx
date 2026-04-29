@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Receipt, Users, FilePlus2, LogOut, Languages, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Receipt, Users, FilePlus2, LogOut, Languages, Sun, Moon, Building2 } from "lucide-react";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n-context";
 import { useTheme } from "@/lib/theme-context";
@@ -8,16 +8,17 @@ import { cn } from "@/lib/utils";
 
 interface NavItem {
   to: string;
-  labelKey: "nav.dashboard" | "nav.transactions" | "nav.team" | "nav.entry";
+  labelKey: "nav.dashboard" | "nav.transactions" | "nav.team" | "nav.entry" | "nav.departments";
   icon: typeof LayoutDashboard;
   roles: Role[];
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["manager", "accountant", "sales_rep"] },
-  { to: "/transactions", labelKey: "nav.transactions", icon: Receipt, roles: ["manager", "accountant", "sales_rep"] },
-  { to: "/entry", labelKey: "nav.entry", icon: FilePlus2, roles: ["manager", "accountant"] },
-  { to: "/team", labelKey: "nav.team", icon: Users, roles: ["manager"] },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["ceo", "dept_head", "manager", "accountant", "sales_rep"] },
+  { to: "/transactions", labelKey: "nav.transactions", icon: Receipt, roles: ["ceo", "dept_head", "manager", "accountant", "sales_rep"] },
+  { to: "/entry", labelKey: "nav.entry", icon: FilePlus2, roles: ["ceo", "dept_head", "manager", "accountant"] },
+  { to: "/team", labelKey: "nav.team", icon: Users, roles: ["ceo", "dept_head", "manager"] },
+  { to: "/departments", labelKey: "nav.departments", icon: Building2, roles: ["ceo"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
