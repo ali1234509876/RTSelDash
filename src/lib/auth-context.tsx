@@ -18,6 +18,8 @@ interface AuthContextValue {
   roles: Role[];
   loading: boolean;
   primaryRole: Role | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -25,7 +27,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 const ROLE_PRIORITY: Role[] = ["ceo", "dept_head", "manager", "accountant", "sales_rep"];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -33,62 +34,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadUserData = async (uid: string) => {
-    const [{ data: prof }, { data: rolesData }] = await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, full_name, monthly_target, department_id")
-        .eq("id", uid)
-        .maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
+  const loadUserData = async (currentUser: User) => {
+    const [{ data: profileData, error: profileError }, { data: roleData, error: roleError }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, monthly_target, department_id").eq("id", currentUser.id).maybeSingle(),
+      supabase.from("user_roles").select("role").eq("user_id", currentUser.id),
     ]);
+
+    if (profileError) throw profileError;
+    if (roleError) throw roleError;
+
     setProfile(
-      prof
+      profileData
         ? {
-            id: prof.id,
-            full_name: prof.full_name,
-            monthly_target: Number(prof.monthly_target),
-            department_id: prof.department_id ?? null,
+            id: profileData.id,
+            full_name: profileData.full_name,
+            monthly_target: Number(profileData.monthly_target),
+            department_id: profileData.department_id ?? null,
           }
         : null,
     );
-    setRoles(((rolesData ?? []) as { role: Role }[]).map((r) => r.role));
+    setRoles((roleData ?? []).map((r) => r.role as Role));
   };
 
   useEffect(() => {
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, sess) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) {
-        setTimeout(() => loadUserData(sess.user.id), 0);
-      } else {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+      if (data.session?.user) loadUserData(data.session.user).finally(() => setLoading(false));
+      else setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+      if (nextSession?.user) loadUserData(nextSession.user);
+      else {
         setProfile(null);
         setRoles([]);
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session: sess } }) => {
-      setSession(sess);
-      setUser(sess?.user ?? null);
-      if (sess?.user) loadUserData(sess.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
-
-    return () => subscription.subscription.unsubscribe();
+    return () => listener.subscription.unsubscribe();
   }, []);
 
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  };
+
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    if (error) throw error;
+  };
+
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setRoles([]);
   };
 
   const refreshProfile = async () => {
-    if (user) await loadUserData(user.id);
+    if (user) await loadUserData(user);
   };
 
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, primaryRole, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, roles, loading, primaryRole, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

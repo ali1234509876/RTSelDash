@@ -4,7 +4,7 @@ export type Dictionary = Record<string, { ar: string; en: string }>;
 
 export const dict = {
   // Brand & shell
-  "app.brand": { ar: "أزيموث", en: "AZIMUTH" },
+  "app.brand": { ar: "نظام المبيعات", en: "ARTsalepro" },
   "app.tagline": { ar: "قيادة الأداء", en: "Performance Command" },
   "app.company": { ar: "شركة الرابح", en: "Al-Rabeh Company" },
 

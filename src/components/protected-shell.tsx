@@ -27,6 +27,14 @@ export function ProtectedShell({
     );
   }
 
+  if (allow && !primaryRole) {
+    return (
+      <AppShell>
+        <div className="p-10 text-center text-muted-foreground">{t("common.loading")}</div>
+      </AppShell>
+    );
+  }
+
   if (allow && primaryRole && !allow.includes(primaryRole)) {
     return (
       <AppShell>

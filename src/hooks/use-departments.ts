@@ -10,32 +10,21 @@ export interface Department {
 export function useDepartments() {
   const [data, setData] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const load = async () => {
-    const { data: rows } = await supabase
-      .from("departments")
-      .select("id, name, name_ar")
-      .order("name");
-    setData((rows ?? []) as Department[]);
+    setLoading(true);
+    const { data: rows, error: err } = await supabase.from("departments").select("id, name, name_ar").order("name");
+    setError(err);
+    setData(rows ?? []);
     setLoading(false);
   };
 
   useEffect(() => {
     load();
-    const channel = supabase
-      .channel("departments")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "departments" },
-        () => load(),
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
-  return { data, loading, reload: load };
+  return { data, loading, error, reload: load };
 }
 
 export function departmentLabel(d: Department, lang: "ar" | "en"): string {

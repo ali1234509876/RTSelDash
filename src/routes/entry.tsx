@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
-import { supabase } from "@/integrations/supabase/client";
+import { addTransaction, getProfilesWithRoles } from "@/lib/supabase-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,7 @@ const schema = z.object({
   fileNumber: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_\-/]+$/),
   amount: z.number().min(0).max(1_000_000_000),
   status: z.enum(["completed", "pending", "cancelled"]),
-  salesRepId: z.string().uuid(),
+  salesRepId: z.string().min(1),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   notes: z.string().max(500).optional(),
 });
@@ -49,13 +49,22 @@ function EntryForm() {
   const [salesRepId, setSalesRepId] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
+  const [loadingReps, setLoadingReps] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("profiles")
-      .select("id, full_name")
-      .then(({ data }) => setReps((data ?? []) as RepOption[]));
+    const load = () => {
+      getProfilesWithRoles()
+        .then((profiles) => {
+          setReps(
+            profiles
+          .filter((profile) => profile.roles.includes("sales_rep"))
+          .map((profile) => ({ id: profile.id, full_name: profile.full_name })),
+          );
+        })
+        .finally(() => setLoadingReps(false));
+    };
+    load();
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -70,7 +79,7 @@ function EntryForm() {
         date,
         notes: notes || undefined,
       });
-      const { error } = await supabase.from("transactions").insert({
+      await addTransaction({
         file_number: parsed.fileNumber,
         amount: parsed.amount,
         status: parsed.status,
@@ -79,7 +88,6 @@ function EntryForm() {
         transaction_date: parsed.date,
         notes: parsed.notes ?? null,
       });
-      if (error) throw error;
       toast.success(t("common.success"));
       navigate({ to: "/transactions" });
     } catch (err) {
@@ -124,7 +132,7 @@ function EntryForm() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="salesRep">{t("tx.salesRep")}</Label>
-            <Select value={salesRepId} onValueChange={setSalesRepId}>
+            <Select value={salesRepId} onValueChange={setSalesRepId} disabled={loadingReps}>
               <SelectTrigger id="salesRep">
                 <SelectValue placeholder="—" />
               </SelectTrigger>
@@ -164,7 +172,7 @@ function EntryForm() {
           <Button type="button" variant="ghost" onClick={() => navigate({ to: "/dashboard" })}>
             {t("tx.cancel")}
           </Button>
-          <Button type="submit" disabled={submitting || !salesRepId}>
+          <Button type="submit" disabled={submitting || loadingReps || !salesRepId}>
             {submitting ? t("common.loading") : t("tx.save")}
           </Button>
         </div>

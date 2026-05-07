@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
 import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
+import { getProfilesWithRoles } from "@/lib/supabase-data";
 import { KpiCard } from "@/components/kpi-card";
 import { RadialProgress } from "@/components/radial-progress";
 import {
@@ -45,19 +45,18 @@ export function ManagerDashboard({
   const [filterDept, setFilterDept] = useState<string>("__all__");
 
   useEffect(() => {
-    supabase
-      .from("profiles")
-      .select("id, full_name, monthly_target, department_id")
-      .then(({ data }) => {
-        setReps(
-          (data ?? []).map((p) => ({
-            id: p.id,
-            full_name: p.full_name,
-            monthly_target: Number(p.monthly_target),
-            department_id: p.department_id ?? null,
-          })),
-        );
-      });
+    const load = async () => {
+      const profiles = await getProfilesWithRoles();
+      setReps(
+        profiles.map((p) => ({
+          id: p.id,
+          full_name: p.full_name,
+          monthly_target: Number(p.monthly_target),
+          department_id: p.department_id ?? null,
+        })),
+      );
+    };
+    load();
   }, []);
 
   // Resolve the active department filter:

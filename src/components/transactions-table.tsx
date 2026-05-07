@@ -1,11 +1,9 @@
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency, formatDate } from "@/lib/i18n";
 import { StatusBadge } from "./status-badge";
-import type { Database } from "@/integrations/supabase/types";
+import type { TransactionRow as SupabaseTransactionRow } from "@/lib/supabase-data";
 
-export type TransactionRow = Database["public"]["Tables"]["transactions"]["Row"] & {
-  profiles?: { full_name: string | null } | null;
-};
+export type TransactionRow = SupabaseTransactionRow;
 
 interface Props {
   rows: TransactionRow[];

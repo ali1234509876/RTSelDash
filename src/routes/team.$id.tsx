@@ -4,13 +4,13 @@ import { ArrowLeft } from "lucide-react";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
 import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
 import { KpiCard } from "@/components/kpi-card";
 import { RadialProgress } from "@/components/radial-progress";
 import { TransactionsTable } from "@/components/transactions-table";
+import { getProfile, updateProfile } from "@/lib/supabase-data";
 
 export const Route = createFileRoute("/team/$id")({
   component: EmployeeDetailPage,
@@ -41,30 +41,22 @@ function Inner() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    supabase
-      .from("profiles")
-      .select("id, full_name, monthly_target, department_id")
-      .eq("id", id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!active) return;
-        setProfile(
-          data
-            ? {
-                id: data.id,
-                full_name: data.full_name,
-                monthly_target: Number(data.monthly_target),
-                department_id: data.department_id ?? null,
-              }
-            : null,
-        );
-        setLoading(false);
-      });
-    return () => {
-      active = false;
+    const load = async () => {
+      setLoading(true);
+      const data = await getProfile(id);
+      setProfile(
+        data
+          ? {
+              id: data.id,
+              full_name: data.full_name,
+              monthly_target: Number(data.monthly_target),
+              department_id: data.department_id ?? null,
+            }
+          : null,
+      );
+      setLoading(false);
     };
+    load();
   }, [id]);
 
   const empTxs = useMemo(() => txs.filter((tx) => tx.sales_rep_id === id), [txs, id]);
@@ -92,7 +84,7 @@ function Inner() {
 
   const updateDepartment = async (newId: string) => {
     const value = newId === "__none__" ? null : newId;
-    await supabase.from("profiles").update({ department_id: value }).eq("id", id);
+    await updateProfile(id, { department_id: value });
     setProfile((p) => (p ? { ...p, department_id: value } : p));
   };
 

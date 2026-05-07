@@ -1,8 +1,8 @@
 import { useI18n } from "@/lib/i18n-context";
 import { cn } from "@/lib/utils";
-import type { Database } from "@/integrations/supabase/types";
+import type { TransactionStatus } from "@/lib/supabase-data";
 
-export type TxStatus = Database["public"]["Enums"]["transaction_status"];
+export type TxStatus = TransactionStatus;
 
 const styles: Record<TxStatus, string> = {
   completed: "bg-success/10 text-success border-success/20",

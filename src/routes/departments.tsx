@@ -4,8 +4,8 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
-import { supabase } from "@/integrations/supabase/client";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
+import { addDepartment, removeDepartment } from "@/lib/supabase-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -23,28 +23,26 @@ function DepartmentsPage() {
 
 function Inner() {
   const { t, lang } = useI18n();
-  const { data: departments } = useDepartments();
+  const { data: departments, reload } = useDepartments();
   const [name, setName] = useState("");
   const [nameAr, setNameAr] = useState("");
 
   const create = async () => {
     if (!name.trim()) return;
-    const { error } = await supabase.from("departments").insert({
+    await addDepartment({
       name: name.trim(),
       name_ar: nameAr.trim() || null,
     });
-    if (error) toast.error(error.message);
-    else {
-      toast.success(t("common.success"));
-      setName("");
-      setNameAr("");
-    }
+    toast.success(t("common.success"));
+    reload();
+    setName("");
+    setNameAr("");
   };
 
   const remove = async (id: string) => {
-    const { error } = await supabase.from("departments").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else toast.success(t("common.success"));
+    await removeDepartment(id);
+    toast.success(t("common.success"));
+    reload();
   };
 
   return (

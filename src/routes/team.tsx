@@ -4,20 +4,18 @@ import { toast } from "sonner";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
 import { useAuth } from "@/lib/auth-context";
 import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Database } from "@/integrations/supabase/types";
+import { getProfilesWithRoles, updateProfile } from "@/lib/supabase-data";
+import type { Role } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/team")({
   component: TeamPage,
 });
-
-type Role = Database["public"]["Enums"]["app_role"];
 
 interface RepRow {
   id: string;
@@ -38,33 +36,27 @@ function TeamPage() {
 function Inner() {
   const { t, lang } = useI18n();
   const { primaryRole } = useAuth();
-  const { data: txs } = useTransactions({ scope: "all" });
-  const { data: departments } = useDepartments();
+  const { data: txs, loading: txLoading } = useTransactions({ scope: "all" });
+  const { data: departments, loading: departmentsLoading } = useDepartments();
   const [reps, setReps] = useState<RepRow[]>([]);
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
 
   const canAssignDept = primaryRole === "ceo" || primaryRole === "dept_head";
 
   const load = async () => {
-    const [{ data: profs }, { data: rolesData }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, monthly_target, department_id"),
-      supabase.from("user_roles").select("user_id, role"),
-    ]);
-    const roleMap = new Map<string, Role[]>();
-    (rolesData ?? []).forEach((r) => {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role);
-      roleMap.set(r.user_id, arr);
-    });
+    setLoading(true);
+    const profiles = await getProfilesWithRoles();
     setReps(
-      (profs ?? []).map((p) => ({
+      profiles.map((p) => ({
         id: p.id,
         full_name: p.full_name,
         monthly_target: Number(p.monthly_target),
         department_id: p.department_id ?? null,
-        roles: roleMap.get(p.id) ?? [],
+        roles: p.roles,
       })),
     );
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -77,22 +69,15 @@ function Inner() {
       toast.error(t("common.error"));
       return;
     }
-    const { error } = await supabase.from("profiles").update({ monthly_target: value }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(t("manager.targetSaved"));
-      setDrafts((d) => ({ ...d, [id]: "" }));
-      load();
-    }
+    await updateProfile(id, { monthly_target: value });
+    toast.success(t("manager.targetSaved"));
+    setDrafts((d) => ({ ...d, [id]: "" }));
   };
 
   const updateDepartment = async (id: string, deptId: string) => {
     const value = deptId === "__none__" ? null : deptId;
-    const { error } = await supabase.from("profiles").update({ department_id: value }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      setReps((rs) => rs.map((r) => (r.id === id ? { ...r, department_id: value } : r)));
-    }
+    await updateProfile(id, { department_id: value });
+    setReps((rs) => rs.map((r) => (r.id === id ? { ...r, department_id: value } : r)));
   };
 
   const deptName = useMemo(() => {
@@ -121,7 +106,14 @@ function Inner() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {reps.map((rep) => {
+            {(loading || txLoading || departmentsLoading) && (
+              <tr>
+                <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted-foreground">
+                  {t("common.loading")}
+                </td>
+              </tr>
+            )}
+            {!loading && !txLoading && !departmentsLoading && reps.map((rep) => {
               const repTxs = txs.filter((tx) => tx.sales_rep_id === rep.id);
               const m = computeMetrics(repTxs);
               const ratio = efficiencyRatio(m.totalAchievement, rep.monthly_target);
@@ -185,7 +177,7 @@ function Inner() {
                 </tr>
               );
             })}
-            {reps.length === 0 && (
+            {!loading && !txLoading && !departmentsLoading && reps.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted-foreground">
                   {t("tx.empty")}

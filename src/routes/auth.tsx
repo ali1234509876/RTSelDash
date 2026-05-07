@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n-context";
 import { useTheme } from "@/lib/theme-context";
@@ -25,7 +24,7 @@ const signupSchema = signinSchema.extend({
 });
 
 function AuthPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { t, lang, setLang } = useI18n();
   const { theme, toggle } = useTheme();
@@ -45,24 +44,13 @@ function AuthPage() {
     try {
       if (mode === "signup") {
         const parsed = signupSchema.parse({ email, password, fullName });
-        const { error } = await supabase.auth.signUp({
-          email: parsed.email,
-          password: parsed.password,
-          options: {
-            data: { full_name: parsed.fullName },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-        if (error) throw error;
+        await signUp(parsed.email, parsed.password, parsed.fullName);
         toast.success(t("common.success"));
       } else {
         const parsed = signinSchema.parse({ email, password });
-        const { error } = await supabase.auth.signInWithPassword({
-          email: parsed.email,
-          password: parsed.password,
-        });
-        if (error) throw error;
+        await signIn(parsed.email, parsed.password);
       }
+      navigate({ to: "/dashboard", replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : t("common.error");
       toast.error(msg);

@@ -33,7 +33,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Azimuth — Performance Command" },
+      { title: "ARTsalepro — Performance Command" },
       { name: "description", content: "Bilingual sales performance and operations analytics platform." },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
