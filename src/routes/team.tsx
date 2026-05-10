@@ -11,7 +11,7 @@ import { useAuth, type Role } from "@/lib/auth-context";
 import { computeMetrics, efficiencyRatio, filterByPeriod, monthRange } from "@/lib/metrics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateProfile } from "@/lib/supabase-data";
+import { updateProfile, setMonthlyTarget } from "@/lib/supabase-data";
 import { errorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/team")({
@@ -65,7 +65,7 @@ function Inner() {
       return;
     }
     try {
-      await updateProfile(id, { monthly_target: value });
+      await setMonthlyTarget(id, value);
       toast.success(t("manager.targetSaved"));
       setDrafts((d) => ({ ...d, [id]: "" }));
       reloadProfiles();

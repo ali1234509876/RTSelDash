@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { currentPeriod } from "@/lib/period";
 
 export type Role = "ceo" | "dept_head" | "accountant" | "sales_rep";
 
@@ -43,20 +44,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (currentUser: User) => {
-    const [{ data: profileData, error: profileError }, { data: roleData, error: roleError }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, monthly_target, department_id").eq("id", currentUser.id).maybeSingle(),
+    const period = currentPeriod();
+    const [
+      { data: profileData, error: profileError },
+      { data: roleData, error: roleError },
+      { data: targetData, error: targetError },
+    ] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, department_id").eq("id", currentUser.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", currentUser.id),
+      supabase
+        .from("monthly_targets")
+        .select("amount")
+        .eq("user_id", currentUser.id)
+        .eq("period", period)
+        .maybeSingle(),
     ]);
 
     if (profileError) throw profileError;
     if (roleError) throw roleError;
+    if (targetError) throw targetError;
 
     setProfile(
       profileData
         ? {
             id: profileData.id,
             full_name: profileData.full_name,
-            monthly_target: Number(profileData.monthly_target),
+            monthly_target: targetData ? Number(targetData.amount) : 0,
             department_id: profileData.department_id ?? null,
           }
         : null,

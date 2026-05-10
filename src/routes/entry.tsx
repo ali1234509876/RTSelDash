@@ -65,6 +65,10 @@ function EntryForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!user) {
+      toast.error(t("common.error"));
+      return;
+    }
     setSubmitting(true);
     try {
       const parsed = schema.parse({
@@ -80,7 +84,7 @@ function EntryForm() {
         amount: parsed.amount,
         status: parsed.status,
         sales_rep_id: parsed.salesRepId,
-        recorded_by: user?.id ?? null,
+        recorded_by: user.id,
         transaction_date: parsed.date,
         notes: parsed.notes ?? null,
       });
