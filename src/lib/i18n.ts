@@ -31,7 +31,6 @@ export const dict = {
   "nav.departments": { ar: "الأقسام", en: "Departments" },
 
   // Roles
-  "role.manager": { ar: "مدير", en: "Manager" },
   "role.accountant": { ar: "محاسب", en: "Accountant" },
   "role.sales_rep": { ar: "مندوب مبيعات", en: "Sales Rep" },
   "role.ceo": { ar: "الرئيس التنفيذي", en: "CEO" },

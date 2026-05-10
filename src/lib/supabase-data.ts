@@ -2,6 +2,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import type { Role } from "@/lib/auth-context";
 
+const KNOWN_ROLES: readonly Role[] = ["ceo", "dept_head", "accountant", "sales_rep"] as const;
+function isKnownRole(value: string): value is Role {
+  return (KNOWN_ROLES as readonly string[]).includes(value);
+}
+
 export type TransactionStatus = Database["public"]["Enums"]["transaction_status"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type DepartmentRow = Database["public"]["Tables"]["departments"]["Row"];
@@ -31,7 +36,10 @@ export async function getProfilesWithRoles() {
     full_name: profile.full_name,
     monthly_target: Number(profile.monthly_target),
     department_id: profile.department_id ?? null,
-    roles: (roles ?? []).filter((role) => role.user_id === profile.id).map((role) => role.role as Role),
+    roles: (roles ?? [])
+      .filter((role) => role.user_id === profile.id)
+      .map((role) => role.role as string)
+      .filter(isKnownRole),
   }));
 }
 

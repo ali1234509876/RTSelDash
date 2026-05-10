@@ -1,8 +1,15 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type Role = "ceo" | "dept_head" | "manager" | "accountant" | "sales_rep";
+export type Role = "ceo" | "dept_head" | "accountant" | "sales_rep";
+
+const KNOWN_ROLES: readonly Role[] = ["ceo", "dept_head", "accountant", "sales_rep"] as const;
+
+function isKnownRole(value: string): value is Role {
+  return (KNOWN_ROLES as readonly string[]).includes(value);
+}
 
 export interface Profile {
   id: string;
@@ -26,8 +33,9 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const ROLE_PRIORITY: Role[] = ["ceo", "dept_head", "manager", "accountant", "sales_rep"];
+const ROLE_PRIORITY: Role[] = ["ceo", "dept_head", "accountant", "sales_rep"];
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const qc = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -53,7 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         : null,
     );
-    setRoles((roleData ?? []).map((r) => r.role as Role));
+    setRoles(
+      (roleData ?? [])
+        .map((r) => r.role as string)
+        .filter(isKnownRole),
+    );
   };
 
   useEffect(() => {
@@ -98,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setRoles([]);
+    qc.clear();
   };
 
   const refreshProfile = async () => {

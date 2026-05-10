@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { AppShell } from "./app-shell";
 import { useI18n } from "@/lib/i18n-context";
+import { useRealtimeTransactions } from "@/hooks/use-realtime-transactions";
 
 export function ProtectedShell({
   children,
@@ -14,6 +15,7 @@ export function ProtectedShell({
   const { user, loading, primaryRole } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  useRealtimeTransactions(!!user);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth", replace: true });

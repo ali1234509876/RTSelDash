@@ -1,31 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
 import { useTransactions } from "@/hooks/use-transactions";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
-import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
+import { useProfile } from "@/hooks/use-profiles";
+import { computeMetrics, efficiencyRatio, filterByPeriod, monthRange } from "@/lib/metrics";
 import { KpiCard } from "@/components/kpi-card";
 import { RadialProgress } from "@/components/radial-progress";
 import { TransactionsTable } from "@/components/transactions-table";
-import { getProfile, updateProfile } from "@/lib/supabase-data";
+import { updateProfile } from "@/lib/supabase-data";
+import { errorMessage } from "@/lib/errors";
 
 export const Route = createFileRoute("/team/$id")({
   component: EmployeeDetailPage,
 });
 
-interface EmployeeProfile {
-  id: string;
-  full_name: string | null;
-  monthly_target: number;
-  department_id: string | null;
-}
-
 function EmployeeDetailPage() {
   return (
-    <ProtectedShell allow={["ceo", "dept_head", "manager"]}>
+    <ProtectedShell allow={["ceo", "dept_head"]}>
       <Inner />
     </ProtectedShell>
   );
@@ -37,30 +33,12 @@ function Inner() {
   const navigate = useNavigate();
   const { data: txs } = useTransactions({ scope: "all" });
   const { data: departments } = useDepartments();
-  const [profile, setProfile] = useState<EmployeeProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const data = await getProfile(id);
-      setProfile(
-        data
-          ? {
-              id: data.id,
-              full_name: data.full_name,
-              monthly_target: Number(data.monthly_target),
-              department_id: data.department_id ?? null,
-            }
-          : null,
-      );
-      setLoading(false);
-    };
-    load();
-  }, [id]);
+  const { data: profile, loading, reload: reloadProfile } = useProfile(id);
 
   const empTxs = useMemo(() => txs.filter((tx) => tx.sales_rep_id === id), [txs, id]);
-  const metrics = useMemo(() => computeMetrics(empTxs), [empTxs]);
+  const period = useMemo(() => monthRange(), []);
+  const empMonthTxs = useMemo(() => filterByPeriod(empTxs, period), [empTxs, period]);
+  const metrics = useMemo(() => computeMetrics(empMonthTxs), [empMonthTxs]);
   const target = profile?.monthly_target ?? 0;
   const ratio = efficiencyRatio(metrics.totalAchievement, target);
   const variance = metrics.totalAchievement - target;
@@ -84,8 +62,13 @@ function Inner() {
 
   const updateDepartment = async (newId: string) => {
     const value = newId === "__none__" ? null : newId;
-    await updateProfile(id, { department_id: value });
-    setProfile((p) => (p ? { ...p, department_id: value } : p));
+    try {
+      await updateProfile(id, { department_id: value });
+      reloadProfile();
+    } catch (err) {
+      toast.error(errorMessage(err, t("common.error")));
+      console.error("[team detail] updateDepartment failed:", err);
+    }
   };
 
   return (

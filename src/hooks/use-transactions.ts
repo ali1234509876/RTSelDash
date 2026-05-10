@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 import type { TransactionRow } from "@/lib/supabase-data";
 
 export type Tx = TransactionRow;
@@ -10,27 +11,32 @@ interface Options {
 }
 
 export function useTransactions({ scope }: Options) {
-  const { user, primaryRole } = useAuth();
-  const [data, setData] = useState<Tx[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      let query = supabase
+  const query = useQuery<Tx[]>({
+    queryKey: queryKeys.transactions(scope, userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      let q = supabase
         .from("transactions")
-        .select("id, file_number, amount, status, sales_rep_id, recorded_by, transaction_date, notes, created_at, updated_at, profiles:sales_rep_id(full_name)")
+        .select(
+          "id, file_number, amount, status, sales_rep_id, recorded_by, transaction_date, notes, created_at, updated_at, profiles:sales_rep_id(full_name)",
+        )
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false });
 
-      if (scope === "self") query = query.eq("sales_rep_id", user.id);
+      if (scope === "self" && userId) q = q.eq("sales_rep_id", userId);
 
-      const { data: rows } = await query;
-      setData((rows ?? []) as unknown as Tx[]);
-      setLoading(false);
-    };
-    load();
-  }, [user, scope, primaryRole]);
+      const { data: rows, error } = await q;
+      if (error) throw error;
+      return (rows ?? []) as unknown as Tx[];
+    },
+  });
 
-  return { data, loading };
+  return {
+    data: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error as Error | null,
+  };
 }

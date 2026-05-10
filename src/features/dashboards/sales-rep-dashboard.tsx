@@ -3,7 +3,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
 import { useTransactions } from "@/hooks/use-transactions";
-import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
+import { computeMetrics, efficiencyRatio, filterByPeriod, monthRange } from "@/lib/metrics";
 import { KpiCard } from "@/components/kpi-card";
 import { RadialProgress } from "@/components/radial-progress";
 import { TransactionsTable } from "@/components/transactions-table";
@@ -13,7 +13,9 @@ export function SalesRepDashboard() {
   const { t, lang } = useI18n();
   const { data, loading } = useTransactions({ scope: "self" });
 
-  const metrics = useMemo(() => computeMetrics(data), [data]);
+  const period = useMemo(() => monthRange(), []);
+  const monthRows = useMemo(() => filterByPeriod(data, period), [data, period]);
+  const metrics = useMemo(() => computeMetrics(monthRows), [monthRows]);
   const target = profile?.monthly_target ?? 0;
   const ratio = efficiencyRatio(metrics.totalAchievement, target);
   const variance = metrics.totalAchievement - target;

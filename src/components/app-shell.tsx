@@ -14,10 +14,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["ceo", "dept_head", "manager", "accountant", "sales_rep"] },
-  { to: "/transactions", labelKey: "nav.transactions", icon: Receipt, roles: ["ceo", "dept_head", "manager", "accountant", "sales_rep"] },
-  { to: "/entry", labelKey: "nav.entry", icon: FilePlus2, roles: ["ceo", "dept_head", "manager", "accountant"] },
-  { to: "/team", labelKey: "nav.team", icon: Users, roles: ["ceo", "dept_head", "manager"] },
+  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard, roles: ["ceo", "dept_head", "accountant", "sales_rep"] },
+  { to: "/transactions", labelKey: "nav.transactions", icon: Receipt, roles: ["ceo", "dept_head", "accountant", "sales_rep"] },
+  { to: "/entry", labelKey: "nav.entry", icon: FilePlus2, roles: ["ceo", "dept_head", "accountant"] },
+  { to: "/team", labelKey: "nav.team", icon: Users, roles: ["ceo", "dept_head"] },
   { to: "/departments", labelKey: "nav.departments", icon: Building2, roles: ["ceo"] },
 ];
 

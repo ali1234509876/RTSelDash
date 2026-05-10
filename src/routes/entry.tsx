@@ -1,11 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
 import { ProtectedShell } from "@/components/protected-shell";
 import { useI18n } from "@/lib/i18n-context";
 import { useAuth } from "@/lib/auth-context";
-import { addTransaction, getProfilesWithRoles } from "@/lib/supabase-data";
+import { useProfilesWithRoles } from "@/hooks/use-profiles";
+import { queryKeys } from "@/lib/query-keys";
+import { addTransaction } from "@/lib/supabase-data";
+import { errorMessage } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +22,7 @@ export const Route = createFileRoute("/entry")({
 
 function EntryPage() {
   return (
-    <ProtectedShell allow={["ceo", "dept_head", "accountant", "manager"]}>
+    <ProtectedShell allow={["ceo", "dept_head", "accountant"]}>
       <EntryForm />
     </ProtectedShell>
   );
@@ -42,30 +46,22 @@ function EntryForm() {
   const { t } = useI18n();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [reps, setReps] = useState<RepOption[]>([]);
+  const qc = useQueryClient();
+  const { data: profiles, loading: loadingReps } = useProfilesWithRoles();
+  const reps = useMemo<RepOption[]>(
+    () =>
+      profiles
+        .filter((profile) => profile.roles.includes("sales_rep"))
+        .map((profile) => ({ id: profile.id, full_name: profile.full_name })),
+    [profiles],
+  );
   const [fileNumber, setFileNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [status, setStatus] = useState<"completed" | "pending" | "cancelled">("completed");
   const [salesRepId, setSalesRepId] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
-  const [loadingReps, setLoadingReps] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    const load = () => {
-      getProfilesWithRoles()
-        .then((profiles) => {
-          setReps(
-            profiles
-          .filter((profile) => profile.roles.includes("sales_rep"))
-          .map((profile) => ({ id: profile.id, full_name: profile.full_name })),
-          );
-        })
-        .finally(() => setLoadingReps(false));
-    };
-    load();
-  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -88,11 +84,16 @@ function EntryForm() {
         transaction_date: parsed.date,
         notes: parsed.notes ?? null,
       });
+      await qc.invalidateQueries({ queryKey: queryKeys.transactionsAll });
       toast.success(t("common.success"));
       navigate({ to: "/transactions" });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : t("common.error");
-      toast.error(msg);
+      if (err instanceof z.ZodError) {
+        toast.error(err.issues.map((i) => i.message).join(", ") || t("common.error"));
+      } else {
+        toast.error(errorMessage(err, t("common.error")));
+      }
+      console.error("[entry] insert failed:", err);
     } finally {
       setSubmitting(false);
     }

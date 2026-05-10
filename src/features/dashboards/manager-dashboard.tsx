@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
 import { useTransactions } from "@/hooks/use-transactions";
-import { computeMetrics, efficiencyRatio } from "@/lib/metrics";
+import { computeMetrics, efficiencyRatio, filterByPeriod, monthRange } from "@/lib/metrics";
 import { useDepartments, departmentLabel } from "@/hooks/use-departments";
-import { getProfilesWithRoles } from "@/lib/supabase-data";
+import { useProfilesWithRoles } from "@/hooks/use-profiles";
 import { KpiCard } from "@/components/kpi-card";
 import { RadialProgress } from "@/components/radial-progress";
 import {
@@ -39,25 +39,24 @@ export function ManagerDashboard({
   subtitle,
 }: Props = {}) {
   const { t, lang } = useI18n();
-  const { data: txs } = useTransactions({ scope: "all" });
+  const { data: allTxs } = useTransactions({ scope: "all" });
   const { data: departments } = useDepartments();
-  const [reps, setReps] = useState<RepRow[]>([]);
+  const { data: profiles } = useProfilesWithRoles();
   const [filterDept, setFilterDept] = useState<string>("__all__");
 
-  useEffect(() => {
-    const load = async () => {
-      const profiles = await getProfilesWithRoles();
-      setReps(
-        profiles.map((p) => ({
-          id: p.id,
-          full_name: p.full_name,
-          monthly_target: Number(p.monthly_target),
-          department_id: p.department_id ?? null,
-        })),
-      );
-    };
-    load();
-  }, []);
+  // KPIs compare against monthly_target, so scope transactions to current month.
+  const period = useMemo(() => monthRange(), []);
+  const txs = useMemo(() => filterByPeriod(allTxs, period), [allTxs, period]);
+  const reps = useMemo<RepRow[]>(
+    () =>
+      profiles.map((p) => ({
+        id: p.id,
+        full_name: p.full_name,
+        monthly_target: Number(p.monthly_target),
+        department_id: p.department_id ?? null,
+      })),
+    [profiles],
+  );
 
   // Resolve the active department filter:
   const activeDept =

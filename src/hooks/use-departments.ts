@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { queryKeys } from "@/lib/query-keys";
 
 export interface Department {
   id: string;
@@ -8,23 +9,25 @@ export interface Department {
 }
 
 export function useDepartments() {
-  const [data, setData] = useState<Department[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const qc = useQueryClient();
+  const query = useQuery<Department[]>({
+    queryKey: queryKeys.departments,
+    queryFn: async () => {
+      const { data: rows, error } = await supabase
+        .from("departments")
+        .select("id, name, name_ar")
+        .order("name");
+      if (error) throw error;
+      return rows ?? [];
+    },
+  });
 
-  const load = async () => {
-    setLoading(true);
-    const { data: rows, error: err } = await supabase.from("departments").select("id, name, name_ar").order("name");
-    setError(err);
-    setData(rows ?? []);
-    setLoading(false);
+  return {
+    data: query.data ?? [],
+    loading: query.isLoading,
+    error: query.error as Error | null,
+    reload: () => qc.invalidateQueries({ queryKey: queryKeys.departments }),
   };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  return { data, loading, error, reload: load };
 }
 
 export function departmentLabel(d: Department, lang: "ar" | "en"): string {

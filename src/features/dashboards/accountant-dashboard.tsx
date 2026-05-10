@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n-context";
 import { formatCurrency } from "@/lib/i18n";
 import { useTransactions } from "@/hooks/use-transactions";
-import { computeMetrics } from "@/lib/metrics";
+import { computeMetrics, filterByPeriod, monthRange } from "@/lib/metrics";
 import { KpiCard } from "@/components/kpi-card";
 import { TransactionsTable } from "@/components/transactions-table";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,9 @@ import { Plus } from "lucide-react";
 export function AccountantDashboard() {
   const { t, lang } = useI18n();
   const { data } = useTransactions({ scope: "all" });
-  const metrics = useMemo(() => computeMetrics(data), [data]);
+  const period = useMemo(() => monthRange(), []);
+  const monthRows = useMemo(() => filterByPeriod(data, period), [data, period]);
+  const metrics = useMemo(() => computeMetrics(monthRows), [monthRows]);
 
   return (
     <div className="px-10 py-8 max-w-[1600px] mx-auto">

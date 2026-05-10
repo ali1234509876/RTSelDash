@@ -33,7 +33,6 @@ function DashboardRouter() {
       />
     );
   }
-  if (primaryRole === "manager") return <ManagerDashboard />;
   if (primaryRole === "accountant") return <AccountantDashboard />;
   if (primaryRole === "sales_rep") return <SalesRepDashboard />;
   return <div className="p-10 text-muted-foreground">{t("common.loading")}</div>;
