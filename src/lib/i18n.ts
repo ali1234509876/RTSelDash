@@ -51,6 +51,16 @@ export const dict = {
   "dept.empty": { ar: "لا توجد أقسام بعد", en: "No departments yet" },
   "dept.sales": { ar: "قسم المبيعات", en: "Sales Department" },
   "dept.telecom": { ar: "قسم اتصالات المبيعات", en: "Telecommunications Sales Dept" },
+  "dept.head": { ar: "رئيس القسم", en: "Head" },
+  "dept.headNone": { ar: "بدون رئيس", en: "No head" },
+  "dept.noHead": { ar: "⚠ لم يتم تعيين رئيس للقسم", en: "⚠ No head assigned" },
+  "dept.code": { ar: "الرمز", en: "Code" },
+  "dept.codePlaceholder": { ar: "مثلاً SLS", en: "e.g. SLS" },
+  "dept.active": { ar: "نشط", en: "Active" },
+  "dept.archived": { ar: "مؤرشف", en: "Archived" },
+  "dept.archive": { ar: "أرشفة", en: "Archive" },
+  "dept.restore": { ar: "استعادة", en: "Restore" },
+  "dept.changeHead": { ar: "تغيير الرئيس", en: "Change head" },
 
   // KPIs
   "kpi.totalAchievement": { ar: "إجمالي المحقق", en: "Total Achievement" },
@@ -100,6 +110,11 @@ export const dict = {
   // Dept head
   "depthead.title": { ar: "أداء القسم", en: "Department Performance" },
   "depthead.subtitle": { ar: "أداء فريق قسمك", en: "Your department's team performance" },
+  "depthead.noDeptTitle": { ar: "لم يتم تعيين قسم تديره بعد", en: "You do not manage any department yet" },
+  "depthead.noDeptHint": {
+    ar: "تواصل مع الرئيس التنفيذي لتعيينك رئيساً لأحد الأقسام من صفحة إدارة الأقسام.",
+    en: "Ask the CEO to assign you as head of a department from the Departments page.",
+  },
 
   // Sales rep
   "rep.welcome": { ar: "أهلاً", en: "Welcome" },
@@ -120,6 +135,7 @@ export const dict = {
   "common.error": { ar: "حدث خطأ", en: "An error occurred" },
   "common.success": { ar: "تم بنجاح", en: "Success" },
   "common.actions": { ar: "إجراءات", en: "Actions" },
+  "common.delete": { ar: "حذف", en: "Delete" },
   "common.search": { ar: "بحث...", en: "Search..." },
   "common.theme.dark": { ar: "داكن", en: "Dark" },
   "common.theme.light": { ar: "فاتح", en: "Light" },

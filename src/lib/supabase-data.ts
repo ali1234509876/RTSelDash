@@ -104,8 +104,31 @@ export async function addTransaction(input: Database["public"]["Tables"]["transa
   if (error) throw error;
 }
 
-export async function addDepartment(input: Pick<DepartmentRow, "name" | "name_ar">) {
+export async function addDepartment(input: {
+  name: string;
+  name_ar: string | null;
+  code?: string | null;
+}) {
   const { error } = await supabase.from("departments").insert(input);
+  if (error) throw error;
+}
+
+export async function updateDepartment(
+  id: string,
+  updates: { name?: string; name_ar?: string | null; code?: string | null; is_active?: boolean },
+) {
+  const { error } = await supabase.from("departments").update(updates).eq("id", id);
+  if (error) throw error;
+}
+
+/** Assign or clear the head of a department. The DB trigger auto-grants the
+ *  `dept_head` role to the new head (idempotent). Removing a head does NOT
+ *  revoke their role — that is an explicit admin action. */
+export async function setDepartmentHead(departmentId: string, headId: string | null) {
+  const { error } = await supabase
+    .from("departments")
+    .update({ head_id: headId })
+    .eq("id", departmentId);
   if (error) throw error;
 }
 

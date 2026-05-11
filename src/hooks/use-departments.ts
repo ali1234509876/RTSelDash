@@ -6,6 +6,9 @@ export interface Department {
   id: string;
   name: string;
   name_ar: string | null;
+  head_id: string | null;
+  code: string | null;
+  is_active: boolean;
 }
 
 export function useDepartments() {
@@ -15,10 +18,10 @@ export function useDepartments() {
     queryFn: async () => {
       const { data: rows, error } = await supabase
         .from("departments")
-        .select("id, name, name_ar")
+        .select("id, name, name_ar, head_id, code, is_active")
         .order("name");
       if (error) throw error;
-      return rows ?? [];
+      return (rows ?? []) as unknown as Department[];
     },
   });
 

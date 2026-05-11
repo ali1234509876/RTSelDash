@@ -26,6 +26,8 @@ interface AuthContextValue {
   roles: Role[];
   loading: boolean;
   primaryRole: Role | null;
+  /** Department this user is HEAD of (via departments.head_id), null if none. */
+  managedDepartmentId: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [managedDepartmentId, setManagedDepartmentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (currentUser: User) => {
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { data: profileData, error: profileError },
       { data: roleData, error: roleError },
       { data: targetData, error: targetError },
+      { data: managedDept, error: managedDeptError },
     ] = await Promise.all([
       supabase.from("profiles").select("id, full_name, department_id").eq("id", currentUser.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", currentUser.id),
@@ -58,11 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", currentUser.id)
         .eq("period", period)
         .maybeSingle(),
+      supabase
+        .from("departments")
+        .select("id")
+        .eq("head_id", currentUser.id)
+        .eq("is_active", true)
+        .maybeSingle(),
     ]);
 
     if (profileError) throw profileError;
     if (roleError) throw roleError;
     if (targetError) throw targetError;
+    if (managedDeptError) throw managedDeptError;
 
     setProfile(
       profileData
@@ -79,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .map((r) => r.role as string)
         .filter(isKnownRole),
     );
+    setManagedDepartmentId(managedDept?.id ?? null);
   };
 
   useEffect(() => {
@@ -96,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else {
         setProfile(null);
         setRoles([]);
+        setManagedDepartmentId(null);
       }
     });
 
@@ -123,6 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setRoles([]);
+    setManagedDepartmentId(null);
     qc.clear();
   };
 
@@ -133,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, primaryRole, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, profile, roles, loading, primaryRole, managedDepartmentId, signIn, signUp, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
