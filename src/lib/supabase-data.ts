@@ -52,12 +52,29 @@ export async function getProfilesWithRoles(period: string = currentPeriod()) {
   }));
 }
 
-export async function getProfile(id: string, period: string = currentPeriod()) {
+export interface ProfileDetail {
+  id: string;
+  full_name: string | null;
+  monthly_target: number;
+  department_id: string | null;
+  phone: string | null;
+  hired_at: string | null;
+  is_active: boolean;
+}
+
+export async function getProfile(
+  id: string,
+  period: string = currentPeriod(),
+): Promise<ProfileDetail | null> {
   const [
     { data, error },
     { data: target, error: targetError },
   ] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, department_id").eq("id", id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("id, full_name, department_id, phone, hired_at, is_active")
+      .eq("id", id)
+      .maybeSingle(),
     supabase.from("monthly_targets").select("amount").eq("user_id", id).eq("period", period).maybeSingle(),
   ]);
 
@@ -70,12 +87,32 @@ export async function getProfile(id: string, period: string = currentPeriod()) {
     full_name: data.full_name,
     monthly_target: target ? Number(target.amount) : 0,
     department_id: data.department_id ?? null,
+    phone: data.phone ?? null,
+    hired_at: data.hired_at ?? null,
+    is_active: data.is_active,
   };
+}
+
+/** Fetch monthly_targets.amount for one user across many periods. */
+export async function getMonthlyTargetsHistory(
+  userId: string,
+  periods: string[],
+): Promise<Record<string, number>> {
+  if (periods.length === 0) return {};
+  const { data, error } = await supabase
+    .from("monthly_targets")
+    .select("period, amount")
+    .eq("user_id", userId)
+    .in("period", periods);
+  if (error) throw error;
+  const out: Record<string, number> = {};
+  for (const row of data ?? []) out[row.period] = Number(row.amount);
+  return out;
 }
 
 export async function updateProfile(
   id: string,
-  updates: Partial<Pick<ProfileRow, "department_id" | "full_name">>,
+  updates: Partial<Pick<ProfileRow, "department_id" | "full_name" | "phone" | "hired_at" | "is_active">>,
 ) {
   const { error } = await supabase.from("profiles").update(updates).eq("id", id);
   if (error) throw error;
