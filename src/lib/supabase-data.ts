@@ -141,6 +141,17 @@ export async function addTransaction(input: Database["public"]["Tables"]["transa
   if (error) throw error;
 }
 
+/** Soft-delete a transaction by stamping deleted_at. Hard DELETE is blocked
+ *  by RLS. The audit trigger captures the UPDATE so we keep a full trail of
+ *  who cancelled what and when. */
+export async function softDeleteTransaction(id: string) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function addDepartment(input: {
   name: string;
   name_ar: string | null;
@@ -172,4 +183,85 @@ export async function setDepartmentHead(departmentId: string, headId: string | n
 export async function removeDepartment(id: string) {
   const { error } = await supabase.from("departments").delete().eq("id", id);
   if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Audit log
+// ---------------------------------------------------------------------------
+
+export type AuditAction = "INSERT" | "UPDATE" | "DELETE";
+
+export interface AuditRow {
+  id: number;
+  transaction_id: string;
+  action: AuditAction;
+  actor: string | null;
+  changed_at: string;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+  /** Joined display name for `actor` (resolved client-side from a profiles lookup). */
+  actor_name: string | null;
+  /** File number from before_data/after_data for display in the global feed. */
+  file_number: string | null;
+}
+
+interface RawAuditRow {
+  id: number;
+  transaction_id: string;
+  action: AuditAction;
+  actor: string | null;
+  changed_at: string;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+}
+
+/** Resolve actor user_ids → display names from profiles, batched. */
+async function attachActorNames(rows: RawAuditRow[]): Promise<AuditRow[]> {
+  const actorIds = Array.from(
+    new Set(rows.map((r) => r.actor).filter((id): id is string => !!id)),
+  );
+  let nameById = new Map<string, string | null>();
+  if (actorIds.length > 0) {
+    // RLS on profiles already restricts who can see whom; for actors outside
+    // the viewer's scope we fall back to "System" / null without surfacing IDs.
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", actorIds);
+    if (error) throw error;
+    nameById = new Map((data ?? []).map((p) => [p.id, p.full_name ?? null]));
+  }
+  return rows.map((r) => {
+    const after = r.after_data as { file_number?: string } | null;
+    const before = r.before_data as { file_number?: string } | null;
+    return {
+      ...r,
+      actor_name: r.actor ? nameById.get(r.actor) ?? null : null,
+      file_number: after?.file_number ?? before?.file_number ?? null,
+    };
+  });
+}
+
+/** Audit entries for one transaction, oldest → newest (so a UI can show a
+ *  natural timeline). Server-side RLS scopes visibility per role. */
+export async function getTransactionAudit(transactionId: string): Promise<AuditRow[]> {
+  const { data, error } = await supabase
+    .from("transaction_audit")
+    .select("id, transaction_id, action, actor, changed_at, before_data, after_data")
+    .eq("transaction_id", transactionId)
+    .order("changed_at", { ascending: true });
+  if (error) throw error;
+  return attachActorNames((data ?? []) as RawAuditRow[]);
+}
+
+/** Global audit feed, newest → oldest. Server-side RLS scopes visibility:
+ *  CEO / accountant → all; dept_head → own dept's transactions only. */
+export async function getAuditFeed(limit = 200): Promise<AuditRow[]> {
+  const { data, error } = await supabase
+    .from("transaction_audit")
+    .select("id, transaction_id, action, actor, changed_at, before_data, after_data")
+    .order("changed_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return attachActorNames((data ?? []) as RawAuditRow[]);
 }

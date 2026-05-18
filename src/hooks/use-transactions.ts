@@ -21,8 +21,11 @@ export function useTransactions({ scope }: Options) {
       let q = supabase
         .from("transactions")
         .select(
-          "id, file_number, amount, status, sales_rep_id, recorded_by, transaction_date, notes, created_at, updated_at, profiles:sales_rep_id(full_name)",
+          "id, file_number, amount, status, sales_rep_id, recorded_by, transaction_date, notes, deleted_at, created_at, updated_at, profiles:sales_rep_id(full_name)",
         )
+        // Soft-deleted rows are kept in the DB for audit but hidden everywhere
+        // they would feed totals/KPIs.
+        .is("deleted_at", null)
         .order("transaction_date", { ascending: false })
         .order("created_at", { ascending: false });
 

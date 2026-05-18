@@ -37,6 +37,7 @@ export const dict = {
   "nav.entry": { ar: "إدخال عملية", en: "Record Entry" },
   "nav.settings": { ar: "الإعدادات", en: "Settings" },
   "nav.departments": { ar: "الأقسام", en: "Departments" },
+  "nav.audit": { ar: "سجل التدقيق", en: "Audit Log" },
 
   // Roles
   "role.accountant": { ar: "محاسب", en: "Accountant" },
@@ -104,6 +105,15 @@ export const dict = {
   "tx.cancel": { ar: "إلغاء", en: "Cancel" },
   "tx.entryTitle": { ar: "تسجيل عملية جديدة", en: "Record New Transaction" },
   "tx.entrySubtitle": { ar: "أدخل تفاصيل الملف بدقة", en: "Enter file details precisely" },
+  "tx.cancelAction": { ar: "إلغاء العملية", en: "Cancel transaction" },
+  "tx.cancelConfirm": {
+    ar: "هل أنت متأكد من إلغاء هذه العملية؟ ستُحفظ في السجل للمراجعة لكنها لن تظهر في الإجماليات.",
+    en: "Cancel this transaction? It will be retained in the audit log but excluded from totals.",
+  },
+  "tx.cancelled": { ar: "تم إلغاء العملية", en: "Transaction cancelled" },
+  "tx.cancelFailed": { ar: "فشل إلغاء العملية", en: "Failed to cancel transaction" },
+  "tx.history": { ar: "السجل", en: "History" },
+  "tx.historyTitle": { ar: "سجل العملية", en: "Transaction history" },
 
   // Status
   "status.completed": { ar: "مكتمل", en: "Completed" },
@@ -168,6 +178,34 @@ export const dict = {
   "emp.detail.trendSubtitle": { ar: "آخر 6 أشهر", en: "Last 6 months" },
   "emp.detail.tenureYears": { ar: "س", en: "y" },
   "emp.detail.tenureMonths": { ar: "ش", en: "m" },
+
+  // Audit log
+  "audit.title": { ar: "سجل التدقيق", en: "Audit Log" },
+  "audit.subtitle": {
+    ar: "سجل كامل للعمليات: من غيّر ماذا ومتى",
+    en: "Full record of who changed what and when on transactions",
+  },
+  "audit.action.insert": { ar: "إنشاء", en: "Created" },
+  "audit.action.update": { ar: "تعديل", en: "Updated" },
+  "audit.action.delete": { ar: "حذف", en: "Deleted" },
+  "audit.action.cancel": { ar: "إلغاء", en: "Cancelled" },
+  "audit.actor": { ar: "بواسطة", en: "By" },
+  "audit.actor.unknown": { ar: "نظام", en: "System" },
+  "audit.changedAt": { ar: "بتاريخ", en: "At" },
+  "audit.changedFields": { ar: "الحقول المعدلة", en: "Changed fields" },
+  "audit.noChanges": { ar: "لا تغييرات مسجلة", en: "No tracked changes" },
+  "audit.empty": { ar: "لا توجد سجلات تدقيق بعد", en: "No audit entries yet" },
+  "audit.transaction": { ar: "العملية", en: "Transaction" },
+  "audit.filter.all": { ar: "كل الأحداث", en: "All actions" },
+  "audit.field.amount": { ar: "القيمة", en: "Amount" },
+  "audit.field.status": { ar: "الحالة", en: "Status" },
+  "audit.field.notes": { ar: "ملاحظات", en: "Notes" },
+  "audit.field.deleted_at": { ar: "تاريخ الإلغاء", en: "Cancelled at" },
+  "audit.field.transaction_date": { ar: "تاريخ العملية", en: "Transaction date" },
+  "audit.field.sales_rep_id": { ar: "المندوب", en: "Sales rep" },
+  "audit.field.file_number": { ar: "رقم الملف", en: "File number" },
+  "audit.value.empty": { ar: "—", en: "—" },
+  "audit.close": { ar: "إغلاق", en: "Close" },
 
   // Common
   "common.loading": { ar: "جارٍ التحميل...", en: "Loading..." },
