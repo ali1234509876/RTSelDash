@@ -265,3 +265,87 @@ export async function getAuditFeed(limit = 200): Promise<AuditRow[]> {
   if (error) throw error;
   return attachActorNames((data ?? []) as RawAuditRow[]);
 }
+
+export interface WeeklyInsight {
+  weekNumber: number;
+  year: number;
+  weekStart: string; // ISO date
+  weekEnd: string; // ISO date
+  totalAmount: number;
+  transactionCount: number;
+}
+
+export async function getWeeklyInsights(): Promise<WeeklyInsight[]> {
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("amount, transaction_date")
+    .is("deleted_at", null)
+    .order("transaction_date", { ascending: true });
+
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const weeksByYear = new Map<number, Map<number, { amount: number; count: number }>>();
+
+  for (const row of rows) {
+    const date = new Date(row.transaction_date);
+    const year = date.getFullYear();
+    const weekNumber = getISOWeek(date);
+
+    if (!weeksByYear.has(year)) {
+      weeksByYear.set(year, new Map());
+    }
+    const yearWeeks = weeksByYear.get(year)!;
+    if (!yearWeeks.has(weekNumber)) {
+      yearWeeks.set(weekNumber, { amount: 0, count: 0 });
+    }
+    const week = yearWeeks.get(weekNumber)!;
+    week.amount += Number(row.amount);
+    week.count += 1;
+  }
+
+  const insights: WeeklyInsight[] = [];
+  for (const [year, yearWeeks] of weeksByYear.entries()) {
+    for (const [weekNumber, metrics] of yearWeeks.entries()) {
+      const weekStart = getISOWeekStart(year, weekNumber);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      insights.push({
+        weekNumber,
+        year,
+        weekStart: weekStart.toISOString().split("T")[0],
+        weekEnd: weekEnd.toISOString().split("T")[0],
+        totalAmount: metrics.amount,
+        transactionCount: metrics.count,
+      });
+    }
+  }
+
+  // Sort by year descending, then week descending
+  insights.sort((a, b) => {
+    if (a.year !== b.year) return b.year - a.year;
+    return b.weekNumber - a.weekNumber;
+  });
+
+  return insights;
+}
+
+// Helper: get ISO week number (1-53)
+function getISOWeek(date: Date): number {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNumber = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return weekNumber;
+}
+
+// Helper: get Monday of ISO week
+function getISOWeekStart(year: number, weekNumber: number): Date {
+  const d = new Date(year, 0, 1 + (weekNumber - 1) * 7);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d;
+}

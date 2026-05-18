@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Receipt, Users, FilePlus2, LogOut, Languages, Sun, Moon, Building2, History } from "lucide-react";
+import { LayoutDashboard, Receipt, Users, FilePlus2, LogOut, Languages, Sun, Moon, Building2, History, BarChart3 } from "lucide-react";
 import { useAuth, type Role } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n-context";
 import { useTheme } from "@/lib/theme-context";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 interface NavItem {
   to: string;
-  labelKey: "nav.dashboard" | "nav.transactions" | "nav.team" | "nav.entry" | "nav.departments" | "nav.audit";
+  labelKey: "nav.dashboard" | "nav.transactions" | "nav.team" | "nav.entry" | "nav.departments" | "nav.audit" | "nav.insights";
   icon: typeof LayoutDashboard;
   roles: Role[];
 }
@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/team", labelKey: "nav.team", icon: Users, roles: ["ceo", "dept_head"] },
   { to: "/departments", labelKey: "nav.departments", icon: Building2, roles: ["ceo"] },
   { to: "/audit", labelKey: "nav.audit", icon: History, roles: ["ceo", "dept_head", "accountant"] },
+  { to: "/insights", labelKey: "nav.insights", icon: BarChart3, roles: ["ceo", "dept_head", "accountant"] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

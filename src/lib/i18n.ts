@@ -38,6 +38,7 @@ export const dict = {
   "nav.settings": { ar: "الإعدادات", en: "Settings" },
   "nav.departments": { ar: "الأقسام", en: "Departments" },
   "nav.audit": { ar: "سجل التدقيق", en: "Audit Log" },
+  "nav.insights": { ar: "الأداء الأسبوعي", en: "Weekly Insights" },
 
   // Roles
   "role.accountant": { ar: "محاسب", en: "Accountant" },
@@ -206,6 +207,16 @@ export const dict = {
   "audit.field.file_number": { ar: "رقم الملف", en: "File number" },
   "audit.value.empty": { ar: "—", en: "—" },
   "audit.close": { ar: "إغلاق", en: "Close" },
+
+  // Insights
+  "insights.title": { ar: "الأداء الأسبوعي", en: "Weekly Insights" },
+  "insights.subtitle": { ar: "ملخص الأداء حسب الأسبوع", en: "Weekly performance summary" },
+  "insights.empty": { ar: "لا توجد بيانات بعد", en: "No data yet" },
+  "insights.week": { ar: "الأسبوع", en: "Week" },
+  "insights.period": { ar: "الفترة", en: "Period" },
+  "insights.amount": { ar: "المجموع", en: "Total" },
+  "insights.count": { ar: "عدد العمليات", en: "Transactions" },
+  "insights.weekLabel": { ar: "أسبوع {{w}} - {{y}}", en: "Week {{w}}, {{y}}" },
 
   // Common
   "common.loading": { ar: "جارٍ التحميل...", en: "Loading..." },
