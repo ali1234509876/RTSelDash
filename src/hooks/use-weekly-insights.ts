@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { getDailyMetrics, type DailyMetricRow } from "@/lib/supabase-data";
+import { getDailyMetrics, getWeeklyInsights, type DailyMetricRow, type WeeklyInsight } from "@/lib/supabase-data";
 
 const QUERY_KEY = ["dailyMetrics"] as const;
+const WEEKLY_QUERY_KEY = ["weeklyInsights"] as const;
 
 // Helper: get Monday of current week
 function getMondayOfCurrentWeek(): Date {
@@ -17,6 +18,13 @@ export function useDailyMetrics(weekStart: Date = getMondayOfCurrentWeek()) {
   return useQuery<DailyMetricRow[]>({
     queryKey: [...QUERY_KEY, weekStart.toISOString()],
     queryFn: () => getDailyMetrics(weekStart),
+  });
+}
+
+export function useWeeklyInsights() {
+  return useQuery<WeeklyInsight[]>({
+    queryKey: WEEKLY_QUERY_KEY,
+    queryFn: getWeeklyInsights,
   });
 }
 
