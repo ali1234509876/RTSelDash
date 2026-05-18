@@ -74,7 +74,7 @@ function WeekRow({
   managedDepartmentIds: string[];
 }) {
   const weekStart = new Date(week.weekStart);
-  const { data: dailyRows, isLoading: dailyLoading } = useDailyMetrics(isExpanded ? weekStart : new Date(0));
+  const { data: dailyRows, isLoading: dailyLoading } = useDailyMetrics(weekStart);
 
   const filteredRows = primaryRole === "dept_head" && managedDepartmentIds.length > 0
     ? (dailyRows ?? []).filter(r => r.departmentId && managedDepartmentIds.includes(r.departmentId))
@@ -100,28 +100,32 @@ function WeekRow({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-accent/40 transition-colors text-start"
+        className="w-full px-6 py-4 hover:bg-accent/40 transition-colors text-start"
       >
-        <div className="flex items-center gap-3">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-          <span className="text-sm font-medium text-foreground">
-            {t("insights.weekLabel").replace("{{w}}", week.weekNumber.toString()).replace("{{y}}", week.year.toString())}
-          </span>
-        </div>
-        <div className="flex items-center gap-6 text-sm">
-          <span className="text-muted-foreground">
-            {formatDate(week.weekStart, lang)} – {formatDate(week.weekEnd, lang)}
-          </span>
-          <span className="font-medium text-foreground tabular">
-            {formatCurrency(week.totalAmount, lang)} {t("common.currency")}
-          </span>
-          <span className="text-muted-foreground tabular">
-            {week.transactionCount} {t("insights.count")}
-          </span>
+        <div className="flex items-center">
+          <div className="flex items-center gap-3 min-w-[200px]">
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm font-medium text-foreground">
+              {t("insights.weekLabel").replace("{{w}}", week.weekNumber.toString()).replace("{{y}}", week.year.toString())}
+            </span>
+          </div>
+          <div className="flex items-center gap-6 text-sm flex-1">
+            <span className="text-muted-foreground w-[180px]">
+              {formatDate(week.weekStart, lang)} – {formatDate(week.weekEnd, lang)}
+            </span>
+            {dailyTotals.map((total, i) => (
+              <span key={i} className={`w-[100px] text-end tabular ${today === weekDates[i] ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                {total > 0 ? formatCurrency(total, lang) : "—"}
+              </span>
+            ))}
+            <span className="w-[120px] text-end font-medium text-foreground tabular">
+              {formatCurrency(week.totalAmount, lang)}
+            </span>
+          </div>
         </div>
       </button>
 
