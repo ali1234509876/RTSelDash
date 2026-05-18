@@ -363,26 +363,43 @@ export async function getDailyMetrics(weekStart: Date): Promise<DailyMetricRow[]
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
 
-  const { data, error } = await supabase
+  // First, fetch transactions for the week
+  const { data: txData, error: txError } = await supabase
     .from("transactions")
-    .select("amount, transaction_date, sales_rep_id, profiles!inner(full_name, department_id, departments(name))")
+    .select("amount, transaction_date, sales_rep_id")
     .is("deleted_at", null)
     .gte("transaction_date", weekStart.toISOString().split("T")[0])
     .lte("transaction_date", weekEnd.toISOString().split("T")[0])
     .order("transaction_date", { ascending: true });
 
-  if (error) throw error;
+  if (txError) throw txError;
 
-  const rows = data ?? [];
+  const txRows = txData ?? [];
+  if (txRows.length === 0) return [];
+
+  // Get unique employee IDs
+  const empIds = [...new Set(txRows.map(t => t.sales_rep_id))];
+
+  // Fetch employee profiles
+  const { data: profiles, error: profilesError } = await supabase
+    .from("profiles")
+    .select("id, full_name, department_id, departments(name)")
+    .in("id", empIds);
+
+  if (profilesError) throw profilesError;
+
+  const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
+
   const employeeMap = new Map<string, DailyMetricRow>();
 
-  for (const row of rows) {
-    const empId = row.sales_rep_id;
-    const empName = row.profiles?.full_name ?? "Unknown";
-    const deptId = row.profiles?.department_id ?? null;
-    const deptName = row.profiles?.departments?.name ?? null;
-    const dateKey = row.transaction_date.split("T")[0];
-    const amount = Number(row.amount);
+  for (const tx of txRows) {
+    const empId = tx.sales_rep_id;
+    const profile = profileMap.get(empId);
+    const empName = profile?.full_name ?? "Unknown";
+    const deptId = profile?.department_id ?? null;
+    const deptName = profile?.departments?.name ?? null;
+    const dateKey = tx.transaction_date.split("T")[0];
+    const amount = Number(tx.amount);
 
     if (!employeeMap.has(empId)) {
       employeeMap.set(empId, {
