@@ -21,6 +21,14 @@ export const dict = {
   "auth.toSignup": { ar: "ليس لديك حساب؟ أنشئ واحداً", en: "Don't have an account? Sign up" },
   "auth.toSignin": { ar: "لديك حساب؟ سجل الدخول", en: "Already have an account? Sign in" },
   "auth.signout": { ar: "خروج", en: "Sign out" },
+  "auth.outOfScope": {
+    ar: "هذا الموظف خارج نطاق صلاحياتك.",
+    en: "This employee is outside your scope.",
+  },
+  "auth.noManagedDept": {
+    ar: "لا يوجد قسم تديره حالياً.",
+    en: "You don't manage a department yet.",
+  },
 
   // Nav
   "nav.dashboard": { ar: "لوحة الأداء", en: "Dashboard" },
@@ -108,6 +116,13 @@ export const dict = {
   "manager.repBreakdown": { ar: "أداء المناديب", en: "Representative Performance" },
   "manager.setTarget": { ar: "تحديد الهدف", en: "Set Target" },
   "manager.targetSaved": { ar: "تم حفظ الهدف", en: "Target saved" },
+  "manager.scope": { ar: "النطاق", en: "Scope" },
+  "manager.scopeOrg": { ar: "كل الأقسام", en: "Whole organization" },
+  "manager.sortBy": { ar: "ترتيب حسب", en: "Sort by" },
+  "manager.sort.attainment": { ar: "نسبة الإنجاز", en: "Attainment %" },
+  "manager.sort.achievement": { ar: "المحقق", en: "Achievement" },
+  "manager.sort.name": { ar: "الاسم", en: "Name" },
+  "manager.pending": { ar: "معلقة", en: "Pending" },
 
   // CEO
   "ceo.title": { ar: "النظرة التنفيذية", en: "Executive Overview" },

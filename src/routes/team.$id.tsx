@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Phone, Calendar, Clock, Power, Building2 } from "lucide-react";
 import {
@@ -91,7 +91,7 @@ function Inner() {
   const { id } = Route.useParams();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
-  const { primaryRole } = useAuth();
+  const { primaryRole, managedDepartmentId } = useAuth();
   const isCeo = primaryRole === "ceo";
 
   // Period picker — defaults to current month, persisted in component state.
@@ -179,6 +179,22 @@ function Inner() {
     }
   };
 
+  // U2: a dept_head reaching this page for a rep outside their managed
+  // department gets bounced back to /team with an explicit message. RLS would
+  // already hide their transactions/targets (yielding a broken-looking page),
+  // so we surface the boundary instead of silently rendering zeros.
+  useEffect(() => {
+    if (
+      !loading &&
+      profile &&
+      primaryRole === "dept_head" &&
+      profile.department_id !== managedDepartmentId
+    ) {
+      toast.error(t("auth.outOfScope"));
+      navigate({ to: "/team", replace: true });
+    }
+  }, [loading, profile, primaryRole, managedDepartmentId, navigate, t]);
+
   if (loading) {
     return <div className="px-10 py-8 text-sm text-muted-foreground">{t("common.loading")}</div>;
   }
@@ -259,23 +275,27 @@ function Inner() {
               className="h-9"
             />
           </div>
-          <div className="min-w-[200px]">
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
-              {t("dept.assign")}
+          {/* U4: dept reassign is CEO-only — dept_head reassigns are blocked
+              by RLS WITH CHECK and would always toast an error. */}
+          {isCeo && (
+            <div className="min-w-[200px]">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
+                {t("dept.assign")}
+              </div>
+              <select
+                value={profile.department_id ?? "__none__"}
+                onChange={(e) => updateDepartment(e.target.value)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="__none__">{t("dept.none")}</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {departmentLabel(d, lang)}
+                  </option>
+                ))}
+              </select>
             </div>
-            <select
-              value={profile.department_id ?? "__none__"}
-              onChange={(e) => updateDepartment(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
-            >
-              <option value="__none__">{t("dept.none")}</option>
-              {departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {departmentLabel(d, lang)}
-                </option>
-              ))}
-            </select>
-          </div>
+          )}
           {isCeo && (
             <Button
               size="sm"
