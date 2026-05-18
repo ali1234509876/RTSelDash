@@ -349,3 +349,57 @@ function getISOWeekStart(year: number, weekNumber: number): Date {
   d.setDate(diff);
   return d;
 }
+
+export interface DailyMetricRow {
+  employeeId: string;
+  employeeName: string;
+  departmentId: string | null;
+  departmentName: string | null;
+  dailyTotals: Record<string, number>; // key = ISO date (YYYY-MM-DD)
+  weeklyTotal: number;
+}
+
+export async function getDailyMetrics(weekStart: Date): Promise<DailyMetricRow[]> {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("amount, transaction_date, sales_rep_id, profiles!inner(full_name, department_id, departments(name))")
+    .is("deleted_at", null)
+    .gte("transaction_date", weekStart.toISOString().split("T")[0])
+    .lte("transaction_date", weekEnd.toISOString().split("T")[0])
+    .order("transaction_date", { ascending: true });
+
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const employeeMap = new Map<string, DailyMetricRow>();
+
+  for (const row of rows) {
+    const empId = row.sales_rep_id;
+    const empName = row.profiles?.full_name ?? "Unknown";
+    const deptId = row.profiles?.department_id ?? null;
+    const deptName = row.profiles?.departments?.name ?? null;
+    const dateKey = row.transaction_date.split("T")[0];
+    const amount = Number(row.amount);
+
+    if (!employeeMap.has(empId)) {
+      employeeMap.set(empId, {
+        employeeId: empId,
+        employeeName: empName,
+        departmentId: deptId,
+        departmentName: deptName,
+        dailyTotals: {},
+        weeklyTotal: 0,
+      });
+    }
+
+    const empRow = employeeMap.get(empId)!;
+    empRow.dailyTotals[dateKey] = (empRow.dailyTotals[dateKey] || 0) + amount;
+    empRow.weeklyTotal += amount;
+  }
+
+  // Convert to array and sort by name
+  return Array.from(employeeMap.values()).sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+}
