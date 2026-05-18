@@ -26,8 +26,10 @@ interface AuthContextValue {
   roles: Role[];
   loading: boolean;
   primaryRole: Role | null;
-  /** Department this user is HEAD of (via departments.head_id), null if none. */
+  /** First department this user is HEAD of (via departments.head_id), null if none. Kept for backward compat. */
   managedDepartmentId: string | null;
+  /** All active departments this user is HEAD of. Empty array if none. */
+  managedDepartmentIds: string[];
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -43,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [managedDepartmentId, setManagedDepartmentId] = useState<string | null>(null);
+  const [managedDepartmentIds, setManagedDepartmentIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadUserData = async (currentUser: User) => {
@@ -52,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       { data: profileData, error: profileError },
       { data: roleData, error: roleError },
       { data: targetData, error: targetError },
-      { data: managedDept, error: managedDeptError },
+      { data: managedDepts, error: managedDeptError },
     ] = await Promise.all([
       supabase.from("profiles").select("id, full_name, department_id").eq("id", currentUser.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", currentUser.id),
@@ -62,12 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq("user_id", currentUser.id)
         .eq("period", period)
         .maybeSingle(),
+      // Multi-dept-head safe: do NOT use .maybeSingle() — Migration 03 allows a user to head several departments.
       supabase
         .from("departments")
         .select("id")
         .eq("head_id", currentUser.id)
-        .eq("is_active", true)
-        .maybeSingle(),
+        .eq("is_active", true),
     ]);
 
     if (profileError) throw profileError;
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .map((r) => r.role as string)
         .filter(isKnownRole),
     );
-    setManagedDepartmentId(managedDept?.id ?? null);
+    setManagedDepartmentIds((managedDepts ?? []).map((d) => d.id));
   };
 
   useEffect(() => {
@@ -108,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       else {
         setProfile(null);
         setRoles([]);
-        setManagedDepartmentId(null);
+        setManagedDepartmentIds([]);
       }
     });
 
@@ -136,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setRoles([]);
-    setManagedDepartmentId(null);
+    setManagedDepartmentIds([]);
     qc.clear();
   };
 
@@ -144,10 +146,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadUserData(user);
   };
 
-  const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
+  // Demote stale `dept_head`: if the user has the role in user_roles but heads no active department,
+  // pick the next eligible role instead (typically `sales_rep`, which every user has by signup trigger).
+  // This prevents users from being locked into the manager dashboard with an empty state.
+  const isRoleActive = (r: Role) => r !== "dept_head" || managedDepartmentIds.length > 0;
+  const primaryRole =
+    ROLE_PRIORITY.find((r) => roles.includes(r) && isRoleActive(r)) ??
+    ROLE_PRIORITY.find((r) => roles.includes(r)) ??
+    null;
+
+  const managedDepartmentId = managedDepartmentIds[0] ?? null;
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, roles, loading, primaryRole, managedDepartmentId, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        roles,
+        loading,
+        primaryRole,
+        managedDepartmentId,
+        managedDepartmentIds,
+        signIn,
+        signUp,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -61,7 +61,7 @@ interface RowComputed extends RepRow {
 
 function Inner() {
   const { t, lang } = useI18n();
-  const { primaryRole, managedDepartmentId } = useAuth();
+  const { primaryRole, managedDepartmentIds } = useAuth();
   const { data: allTxs, loading: txLoading } = useTransactions({ scope: "all" });
   const { data: departments, loading: departmentsLoading } = useDepartments();
   const period = useMemo(() => monthRange(), []);
@@ -87,17 +87,17 @@ function Inner() {
     [profiles],
   );
 
-  // U1: dept_head only sees their managed dept's reps. Belt-and-suspenders
-  // alongside the new RLS — keeps the roster clean even if a profile leaks
-  // through (e.g. a peer in a different dept).
+  // U1: dept_head only sees reps from departments they actively head.
+  // Multi-dept-head safe — uses the full set of managed departments.
+  // Belt-and-suspenders alongside the RLS in Migration 03.
   const visibleReps = useMemo(() => {
     if (primaryRole === "dept_head") {
-      return managedDepartmentId
-        ? reps.filter((r) => r.department_id === managedDepartmentId)
-        : [];
+      if (managedDepartmentIds.length === 0) return [];
+      const allowed = new Set(managedDepartmentIds);
+      return reps.filter((r) => r.department_id && allowed.has(r.department_id));
     }
     return reps;
-  }, [reps, primaryRole, managedDepartmentId]);
+  }, [reps, primaryRole, managedDepartmentIds]);
 
   const computed = useMemo<RowComputed[]>(
     () =>
@@ -160,14 +160,14 @@ function Inner() {
 
   const scopeLabel =
     primaryRole === "dept_head"
-      ? managedDepartmentId
-        ? (deptName.get(managedDepartmentId) ?? "—")
+      ? managedDepartmentIds.length > 0
+        ? managedDepartmentIds.map((id) => deptName.get(id) ?? "—").join(" · ")
         : t("auth.noManagedDept")
       : t("manager.scopeOrg");
 
   // U7: dept_head with no managed department gets an explicit empty state
   // instead of a confusing zero-row table.
-  if (primaryRole === "dept_head" && !managedDepartmentId) {
+  if (primaryRole === "dept_head" && managedDepartmentIds.length === 0) {
     return (
       <div className="px-10 py-16 max-w-2xl mx-auto text-center">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">

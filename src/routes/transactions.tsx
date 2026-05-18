@@ -20,14 +20,14 @@ function TransactionsPage() {
 
 function Inner() {
   const { t, lang } = useI18n();
-  const { primaryRole, managedDepartmentId } = useAuth();
+  const { primaryRole, managedDepartmentIds } = useAuth();
   const { data: departments } = useDepartments();
   const scope = primaryRole === "sales_rep" ? "self" : "all";
   const { data } = useTransactions({ scope });
 
   // U7: dept_head with no managed department gets an explicit empty state
   // instead of an empty list that looks like a bug.
-  if (primaryRole === "dept_head" && !managedDepartmentId) {
+  if (primaryRole === "dept_head" && managedDepartmentIds.length === 0) {
     return (
       <div className="px-10 py-16 max-w-2xl mx-auto text-center">
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">
@@ -39,15 +39,20 @@ function Inner() {
     );
   }
 
-  // U5: title reflects the actual scope. dept_head sees only their dept's
+  // U5: title reflects the actual scope. dept_head sees only their depts'
   // transactions (RLS enforces it) so the page should say so.
-  const managedDept =
+  // Multi-dept-head safe — joins all managed department names.
+  const subtitle =
     primaryRole === "dept_head"
-      ? departments.find((d) => d.id === managedDepartmentId)
-      : undefined;
-  const subtitle = managedDept
-    ? `${t("dept.label")}: ${departmentLabel(managedDept, lang)}`
-    : t("acc.subtitle");
+      ? managedDepartmentIds.length > 0
+        ? `${t("dept.label")}: ${managedDepartmentIds
+            .map((id) => {
+              const d = departments.find((dep) => dep.id === id);
+              return d ? departmentLabel(d, lang) : "—";
+            })
+            .join(" · ")}`
+        : t("depthead.noDeptTitle")
+      : t("acc.subtitle");
 
   return (
     <div className="px-10 py-8 max-w-[1600px] mx-auto">

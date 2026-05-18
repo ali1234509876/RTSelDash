@@ -91,7 +91,7 @@ function Inner() {
   const { id } = Route.useParams();
   const { t, lang } = useI18n();
   const navigate = useNavigate();
-  const { primaryRole, managedDepartmentId } = useAuth();
+  const { primaryRole, managedDepartmentIds } = useAuth();
   const isCeo = primaryRole === "ceo";
 
   // Period picker — defaults to current month, persisted in component state.
@@ -180,20 +180,22 @@ function Inner() {
   };
 
   // U2: a dept_head reaching this page for a rep outside their managed
-  // department gets bounced back to /team with an explicit message. RLS would
+  // departments gets bounced back to /team with an explicit message. RLS would
   // already hide their transactions/targets (yielding a broken-looking page),
   // so we surface the boundary instead of silently rendering zeros.
+  // Multi-dept-head safe — checks against the full set of managed departments.
   useEffect(() => {
     if (
       !loading &&
       profile &&
       primaryRole === "dept_head" &&
-      profile.department_id !== managedDepartmentId
+      managedDepartmentIds.length > 0 &&
+      (!profile.department_id || !managedDepartmentIds.includes(profile.department_id))
     ) {
       toast.error(t("auth.outOfScope"));
       navigate({ to: "/team", replace: true });
     }
-  }, [loading, profile, primaryRole, managedDepartmentId, navigate, t]);
+  }, [loading, profile, primaryRole, managedDepartmentIds, navigate, t]);
 
   if (loading) {
     return <div className="px-10 py-8 text-sm text-muted-foreground">{t("common.loading")}</div>;
