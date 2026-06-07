@@ -1,0 +1,1 @@
+import{a as r,j as e,N as a}from"./index-BkFgfkzp.js";function o(){const{user:t,loading:s}=r();return s?e.jsx("div",{className:"flex min-h-dvh items-center justify-center bg-background",children:e.jsx("div",{className:"text-muted-foreground text-sm",children:"Loading…"})}):e.jsx(a,{to:t?"/dashboard":"/auth",replace:!0})}export{o as component};

@@ -1,0 +1,1 @@
+function o(e,t){if(e instanceof Error&&e.message)return e.message;if(e&&typeof e=="object"){const s=e;if(typeof s.message=="string"&&s.message){const a=typeof s.details=="string"&&s.details?` (${s.details})`:"";return`${s.message}${a}`}}return t}export{o as e};
